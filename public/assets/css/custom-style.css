@@ -1,0 +1,8 @@
+@font-face {
+    font-family: 'tahnia';
+    src: url('assets/fonts/boldfont.ttf');
+}
+
+.font-custom{
+    font-family: 'tahnia';
+}
