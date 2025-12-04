@@ -5,14 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
 use App\Http\Controllers\HomeController;
-
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\PelangganController;
-
-
+use App\Http\Controllers\FileUploadController; // TAMBAHKAN INI
 
 Route::get('/sia', function () {
     return 'Selamat Datang di Website Kampus PCR!';
@@ -44,10 +42,28 @@ Route::post('question/store', [QuestionController::class, 'store'])
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
+// Routes untuk Pelanggan - JANGAN DUPLIKAT
 Route::resource('pelanggan', PelangganController::class);
+Route::delete('/pelanggan/{id}/files/{filename}', [PelangganController::class, 'destroyFile'])
+     ->name('pelanggan.destroy-file');
+// HAPUS BARIS INI: Route::get('/pelanggan/{id}', [PelangganController::class, 'show'])->name('pelanggan.show');
 
 route::resource('user', UserController::class);
 
 route::get('/auth', [AuthController::class, 'index'])->name('auth');
 route::get('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
+// Routes untuk User
+Route::resource('user', UserController::class);
+
+// Routes untuk File Upload
+Route::post('/upload', [FileUploadController::class, 'store'])->name('file.upload');
+Route::delete('/files/{id}', [FileUploadController::class, 'destroy'])->name('file.destroy');
+Route::get('/files/{refTable}/{refId}', [FileUploadController::class, 'getFiles'])->name('file.get');
+
+// Routes untuk File Upload dengan prefix
+Route::prefix('api')->group(function () {
+    Route::post('/upload', [FileUploadController::class, 'store'])->name('file.upload');
+    Route::delete('/files/{id}', [FileUploadController::class, 'destroy'])->name('file.destroy');
+    Route::get('/files/{refTable}/{refId}', [FileUploadController::class, 'getFiles'])->name('file.get');
+});

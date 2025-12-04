@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
 
 class UserController extends Controller
 {
@@ -12,7 +14,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $data['dataUser'] = User::all();
+        $data['dataUser'] = User::paginate(10);
 		return view('user.index',$data);
  }
 
@@ -51,6 +53,8 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
+        $user = User::findOrFail($id);
+        return view('user.edit', compact('user'));
  }
 
     /**
@@ -58,12 +62,60 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
-  }
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'password' => 'nullable|min:6',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $data = [
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
+
+        // Update password jika diisi
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        // Handle upload foto profil
+        if ($request->hasFile('profile_photo')) {
+            // Hapus foto lama jika ada
+            if ($user->profile_photo && Storage::exists('public/profile-photos/' . $user->profile_photo)) {
+                Storage::delete('public/profile-photos/' . $user->profile_photo);
+            }
+
+            // Simpan foto baru
+            $filename = time() . '_' . $request->file('profile_photo')->getClientOriginalName();
+            $request->file('profile_photo')->storeAs('public/profile-photos', $filename);
+            $data['profile_photo'] = $filename;
+        }
+
+        $user->update($data);
+
+        return redirect()->route('user.index')->with('update', 'User <strong>' . $user->name . '</strong> berhasil diupdate!');
+    }
+
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
- }
+    public function destroy($id)
+{
+    $user = User::findOrFail($id);
+
+    // Hapus foto profil jika ada
+    if ($user->profile_photo && Storage::exists('public/profile-photos/' . $user->profile_photo)) {
+        Storage::delete('public/profile-photos/' . $user->profile_photo);
+    }
+
+    $user->delete();
+
+    return redirect()->route('user.index')->with('succes', 'User <strong>' . $user->name . '</strong> berhasil dihapus!');
 }
+}
+
+
